@@ -1,4 +1,4 @@
-package api_client_test
+package geckocoin_test
 
 import (
 	"context"

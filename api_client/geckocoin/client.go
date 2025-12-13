@@ -1,4 +1,4 @@
-package api_client
+package geckocoin
 
 import (
 	"context"
@@ -34,22 +34,6 @@ func NewGeckoClient(config *config.GeckoApiConfig, cacheRepo *storage.RedisCache
 		config: config,
 		cache:  cacheRepo,
 	}
-}
-
-func (gc *GeckoClient) Ping() error {
-	ctx, cancel := context.WithTimeout(context.Background(), gc.config.PingTimeout)
-	defer cancel()
-
-	response, err := gc.FetchEndpoint(ctx, "ping", nil)
-	if err != nil {
-		return fmt.Errorf("ping failed: %w", err)
-	}
-
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexcepted ping status: %s", response.Status)
-	}
-	return nil
 }
 
 // FetchEndpoint do get custom request to some geckoAPI endpoints

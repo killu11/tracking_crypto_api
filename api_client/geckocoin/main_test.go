@@ -1,7 +1,7 @@
-package api_client_test
+package geckocoin_test
 
 import (
-	gecko_client "crypto_api/api_client"
+	"crypto_api/api_client/geckocoin"
 	"crypto_api/config"
 	"crypto_api/storage"
 	"log"
@@ -10,8 +10,10 @@ import (
 	"time"
 )
 
-var conf, confErr = config.NewConfig()
-var gecko *gecko_client.GeckoClient
+var (
+	conf, confErr = config.NewConfig()
+	gecko         *geckocoin.GeckoClient
+)
 
 func TestMain(m *testing.M) {
 	if confErr == nil {
@@ -19,8 +21,8 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		
-		gecko = gecko_client.NewGeckoClient(
+
+		gecko = geckocoin.NewGeckoClient(
 			conf.Gecko,
 			storage.NewCacheRepository(redisClient, 1*time.Hour),
 		)

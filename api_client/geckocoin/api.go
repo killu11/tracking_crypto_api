@@ -1,7 +1,8 @@
-package api_client
+package geckocoin
 
 import (
 	"context"
+	"crypto_api/api_client/geckocoin/dto"
 	"crypto_api/domain/entities"
 	"encoding/json"
 	"fmt"
@@ -9,27 +10,22 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
-type CoinMeta struct {
-	ID         string `json:"id"`
-	Symbol     string `json:"symbol"`
-	Name       string `json:"name"`
-	MarketData struct {
-		ValutePrices map[string]float64 `json:"current_price"`
-	} `json:"market_data"`
-	LastUpdate time.Time `json:"last_updated"`
-}
+func (gc *GeckoClient) Ping() error {
+	ctx, cancel := context.WithTimeout(context.Background(), gc.config.PingTimeout)
+	defer cancel()
 
-func (m CoinMeta) convertCoin(value string) entities.Coin {
-	return entities.Coin{
-		Id:           m.ID,
-		Symbol:       m.Symbol,
-		Name:         m.Name,
-		Usd:          m.MarketData.ValutePrices[value],
-		LastUpdateAt: m.LastUpdate,
+	response, err := gc.FetchEndpoint(ctx, "ping", nil)
+	if err != nil {
+		return fmt.Errorf("ping failed: %w", err)
 	}
+
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexcepted ping status: %s", response.Status)
+	}
+	return nil
 }
 
 // Все для api POST запроса на отслежние
@@ -40,7 +36,7 @@ func (gc *GeckoClient) GetCoinByID(ctx context.Context, coinID string) (entities
 	}
 	defer response.Body.Close()
 
-	var meta CoinMeta
+	var meta dto.CoinMeta
 	if err = json.NewDecoder(response.Body).Decode(&meta); err != nil {
 		return entities.Coin{}, err
 	}
@@ -48,7 +44,7 @@ func (gc *GeckoClient) GetCoinByID(ctx context.Context, coinID string) (entities
 	if meta.ID == "" {
 		return entities.Coin{}, ErrCoinNotFound
 	}
-	return meta.convertCoin("usd"), nil
+	return meta.ToEntity("usd"), nil
 }
 
 func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, error) {
