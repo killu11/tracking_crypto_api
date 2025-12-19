@@ -7,58 +7,58 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
-
-/*
-TODO: настроить внутренний логгер
-*/
 
 type CoinCache struct {
 	client *redis.Client
+	logger *zap.SugaredLogger
 }
 
 func NewCoinCacheRepository(client *redis.Client) *CoinCache {
-	return &CoinCache{client: client}
-}
-
-func (r *CoinCache) SetCryptoID(ctx context.Context, symbol, id string, ttl time.Duration) error {
-	if err := r.client.Set(ctx, symbol, id, ttl).Err(); err != nil {
-		return fmt.Errorf("caching coin id: %w", err)
+	return &CoinCache{
+		client: client,
+		logger: zap.NewExample().Sugar(),
 	}
-	return nil
 }
 
-func (r *CoinCache) GetCryptoID(ctx context.Context, symbol string) (string, bool, error) {
+func (r *CoinCache) SetCryptoID(ctx context.Context, symbol, id string, ttl time.Duration) {
+	if err := r.client.Set(ctx, symbol, id, ttl).Err(); err != nil {
+		r.logger.Warnf("redis caching coin id: %v", err)
+	}
+}
+
+func (r *CoinCache) GetCryptoID(ctx context.Context, symbol string) (string, bool) {
 	coinID, err := r.client.Get(ctx, symbol).Result()
 
 	if errors.Is(err, redis.Nil) {
-		return "", false, nil
+		return "", false
 	}
 	if err != nil {
-		return "", false, fmt.Errorf("redis get coin id: %w", err)
+		r.logger.Warnf("redis getting coin id: %v", err)
+		return "", false
 	}
-	return coinID, true, nil
+	return coinID, true
 }
 
-func (r *CoinCache) SetNotFoundStatus(ctx context.Context, symbol string) error {
+func (r *CoinCache) SetNotFoundStatus(ctx context.Context, symbol string) {
 	if err := r.client.Set(
 		ctx,
 		fmt.Sprintf("coin:not_found:%s", symbol),
 		"",
 		10*time.Minute,
 	).Err(); err != nil {
-		return fmt.Errorf("caching coin:not_found: %w", err)
+		r.logger.Warnf("redis caching 'not found' status: %v", err)
 	}
-	return nil
 }
 
-func (r *CoinCache) IsNotFound(ctx context.Context, symbol string) (bool, error) {
+func (r *CoinCache) IsNotFound(ctx context.Context, symbol string) bool {
 	_, err := r.client.Get(ctx, fmt.Sprintf("coin:not_found:%s", symbol)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return true, nil
+			return false
 		}
-		return false, fmt.Errorf("redis get: %w", err)
+		r.logger.Warnf("redis getting 'not found' status: %v", err)
 	}
-	return false, nil
+	return true
 }

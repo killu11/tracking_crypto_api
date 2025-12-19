@@ -6,6 +6,7 @@ import (
 	"crypto_api/domain/entities"
 	repos "crypto_api/domain/repositories"
 	cache "crypto_api/persistence/redis"
+	"crypto_api/pkg"
 	"errors"
 	"fmt"
 )
@@ -17,12 +18,16 @@ type CoinService struct {
 	trackingRepo repos.TrackingRepository
 }
 
+var (
+	ErrCoinNotFound = errors.New("coin not found")
+)
+
 func (s *CoinService) TrackCoin(ctx context.Context, symbol string, userID int) error {
 	coin, err := s.getOrCreateCoin(ctx, symbol)
 	if err != nil {
 		return err
 	}
-	exists, err := s.trackingRepo.Exists(ctx, userID, symbol)
+	exists, err := s.trackingRepo.Exists(ctx, userID, coin.ID)
 
 	if err != nil {
 		return err
@@ -37,11 +42,22 @@ func (s *CoinService) TrackCoin(ctx context.Context, symbol string, userID int) 
 	return nil
 }
 
-func NewCoinService(repository repos.CoinRepository) *CoinService {
-	return &CoinService{coinRepo: repository}
+func NewCoinService(
+	repository repos.CoinRepository,
+	cache *cache.CoinCache,
+	client *geckocoin.GeckoClient,
+	trackingRepository repos.TrackingRepository,
+) *CoinService {
+	return &CoinService{
+		coinRepo:     repository,
+		cache:        cache,
+		geckoCoin:    client,
+		trackingRepo: trackingRepository,
+	}
 }
 
 func (s *CoinService) getOrCreateCoin(ctx context.Context, symbol string) (*entities.Coin, error) {
+	symbol = pkg.NormalizeSymbol(symbol)
 	coin, err := s.coinRepo.FindBySymbol(ctx, symbol)
 
 	if err == nil {
@@ -52,21 +68,18 @@ func (s *CoinService) getOrCreateCoin(ctx context.Context, symbol string) (*enti
 		return nil, err
 	}
 
-	ok, _ := s.cache.IsNotFound(ctx, symbol)
-	if ok {
-		//TODO: нужна сервисная ошибка
-		return nil, fmt.Errorf("coin not found")
+	if s.cache.IsNotFound(ctx, symbol) {
+		return nil, ErrCoinNotFound
 	}
 
-	coinID, found, _ := s.cache.GetCryptoID(ctx, symbol)
+	coinID, found := s.cache.GetCryptoID(ctx, symbol)
 
 	if !found {
 		coinID, err = s.geckoCoin.GetCoinID(ctx, symbol)
 		if err != nil {
 			if errors.Is(err, geckocoin.ErrCoinNotFound) {
 				s.cache.SetNotFoundStatus(ctx, symbol)
-				//TODO: нужна сервисная ошибка
-				return nil, fmt.Errorf("coin not found")
+				return nil, ErrCoinNotFound
 			}
 			return nil, err
 		}
@@ -85,5 +98,4 @@ func (s *CoinService) getOrCreateCoin(ctx context.Context, symbol string) (*enti
 		return nil, err
 	}
 	return coin, nil
-
 }

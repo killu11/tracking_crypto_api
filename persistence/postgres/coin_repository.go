@@ -6,6 +6,7 @@ import (
 	"crypto_api/domain/repositories"
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 type CoinRepository struct {
@@ -15,7 +16,7 @@ type CoinRepository struct {
 func (c *CoinRepository) Save(ctx context.Context, coin *entities.Coin) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		`INSERT INTO coins(symbol, name, currernt_price, last_updated) 
+		`INSERT INTO coins(symbol, name, current_price, last_updated) 
 				VALUES ($1, $2, $3, $4) 
 				ON CONFLICT DO NOTHING`,
 		coin.Symbol, coin.Name, coin.Usd, coin.LastUpdateAt,
@@ -39,7 +40,7 @@ func (c *CoinRepository) FindBySymbol(ctx context.Context, symbol string) (*enti
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repositories.ErrCoinNotFound
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed find coin by symbol: %w", err)
 	}
 	return &coin, nil
 }

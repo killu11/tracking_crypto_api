@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -40,7 +39,7 @@ func (u *User) PasswordHash() []byte {
 }
 
 // TODO: передвинуть функцию в транспортный слой
-func UserIDFromContext(ctx context.Context) (int, bool) {
-	id, ok := ctx.Value("userIDKey").(int)
-	return id, ok
-}
+//func UserIDFromContext(ctx context.Context) (int, bool) {
+//	id, ok := ctx.Value("userIDKey").(int)
+//	return id, ok
+//}

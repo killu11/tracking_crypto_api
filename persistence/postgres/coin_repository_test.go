@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func TestCoinRepository_Save(t *testing.T) {
-
-}
-
 func TestCoinRepository_FindBySymbol(t *testing.T) {
 	symbols := map[string]struct{}{
 		"BTC":   {},

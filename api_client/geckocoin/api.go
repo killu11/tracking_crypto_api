@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto_api/api_client/geckocoin/dto"
 	"crypto_api/domain/entities"
+	"crypto_api/pkg"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
 func (gc *GeckoClient) Ping() error {
@@ -29,7 +29,7 @@ func (gc *GeckoClient) Ping() error {
 }
 
 func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, error) {
-	symbol = normalizeSymbol(symbol)
+	symbol = pkg.NormalizeSymbol(symbol)
 	//coinID, found, err := gc.cache.GetCryptoID(ctx, symbol)
 	//if err != nil {
 	//	return "", err
@@ -156,8 +156,4 @@ func (gc *GeckoClient) RefreshCoinPrice(ctx context.Context, coin *entities.Coin
 		return fmt.Errorf("decode refreshing price data: %w", err)
 	}
 	return nil
-}
-
-func normalizeSymbol(symbol string) string {
-	return strings.ToUpper(strings.TrimSpace(symbol))
 }

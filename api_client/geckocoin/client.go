@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 /*
@@ -19,16 +18,13 @@ https://docs.coingecko.com/v3.0.1/reference/coins-list
 */
 
 type GeckoClient struct {
-	http.Client
+	*http.Client
 	config *config.GeckoApiConfig
 }
 
 func NewGeckoClient(config *config.GeckoApiConfig) *GeckoClient {
-	c := http.Client{
-		Timeout: 2 * time.Second,
-	}
 	return &GeckoClient{
-		Client: c,
+		Client: http.DefaultClient,
 		config: config,
 	}
 }

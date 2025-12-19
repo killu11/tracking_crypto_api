@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	ErrCoinNotFound    = errors.New("coin_not_found")
-	ErrUniqueViolation = errors.New("unique_constraint")
+	ErrCoinNotFound = errors.New("coin not found")
 )
 
 type CoinRepository interface {
