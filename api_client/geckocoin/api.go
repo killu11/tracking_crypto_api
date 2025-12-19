@@ -28,37 +28,18 @@ func (gc *GeckoClient) Ping() error {
 	return nil
 }
 
-// Все для api POST запроса на отслежние
-func (gc *GeckoClient) GetCoinByID(ctx context.Context, coinID string) (entities.Coin, error) {
-	response, err := gc.FetchEndpoint(ctx, fmt.Sprintf("coins/%s", coinID), nil)
-	if err != nil {
-		return entities.Coin{}, err
-	}
-	defer response.Body.Close()
-
-	var meta dto.CoinMeta
-	if err = json.NewDecoder(response.Body).Decode(&meta); err != nil {
-		return entities.Coin{}, err
-	}
-
-	if meta.ID == "" {
-		return entities.Coin{}, ErrCoinNotFound
-	}
-	return meta.ToEntity("usd"), nil
-}
-
 func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, error) {
 	symbol = normalizeSymbol(symbol)
-	coinID, found, err := gc.cache.GetCryptoID(ctx, symbol)
-	if err != nil {
-		return "", err
-	}
+	//coinID, found, err := gc.cache.GetCryptoID(ctx, symbol)
+	//if err != nil {
+	//	return "", err
+	//}
+	//
+	//if found {
+	//	return coinID, nil
+	//}
 
-	if found {
-		return coinID, nil
-	}
-
-	coinID, err = gc.searchCoinID(ctx, symbol)
+	coinID, err := gc.searchCoinID(ctx, symbol)
 	if err != nil {
 		return "", err
 	}
@@ -67,11 +48,34 @@ func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, er
 		return "", ErrCoinNotFound
 	}
 
-	if err = gc.cache.SetCryptoID(ctx, symbol, coinID); err != nil {
-		return coinID, err
-	}
+	//if err = gc.cache.SetCryptoID(ctx, symbol, coinID); err != nil {
+	//	return coinID, err
+	//}
 
 	return coinID, nil
+}
+
+// Все для api POST запроса на отслежние
+func (gc *GeckoClient) GetCoinByID(ctx context.Context, coinID string) (*entities.Coin, error) {
+	response, err := gc.FetchEndpoint(ctx, fmt.Sprintf("coins/%s", coinID), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode >= http.StatusBadRequest {
+		message, _ := io.ReadAll(io.LimitReader(response.Body, 512))
+		return nil, NewAPIError(response.Status, response.StatusCode, string(message))
+	}
+
+	var meta dto.CoinMeta
+	if err = json.NewDecoder(response.Body).Decode(&meta); err != nil {
+		return nil, err
+	}
+	if meta.ID == "" {
+		return nil, ErrCoinNotFound
+	}
+	return meta.ToEntity(), nil
 }
 
 func (gc *GeckoClient) searchCoinID(ctx context.Context, symbol string) (string, error) {
@@ -117,6 +121,41 @@ func (gc *GeckoClient) searchCoinID(ctx context.Context, symbol string) (string,
 	}
 
 	return coinMeta.ID, nil
+}
+
+func (gc *GeckoClient) RefreshCoinPrice(ctx context.Context, coin *entities.Coin) error {
+	params := url.Values{}
+	params.Set("vs_currencies", "usd")
+	params.Set("ids", coin.ID)
+
+	response, err := gc.FetchEndpoint(ctx, "simple/price", params)
+	if err != nil {
+		return fmt.Errorf("refresh coin price: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode >= http.StatusBadRequest {
+		message, _ := io.ReadAll(io.LimitReader(response.Body, 512))
+		return NewAPIError(response.Status, response.StatusCode, string(message))
+	}
+
+	dec := json.NewDecoder(response.Body)
+	if !dec.More() {
+		return fmt.Errorf("not found coin by ID")
+	}
+	for {
+		token, err := dec.Token()
+		if err != nil {
+			return fmt.Errorf("failed read token from body: %w", err)
+		}
+		if key, ok := token.(string); ok && key == coin.ID {
+			break
+		}
+	}
+	if err = dec.Decode(&coin); err != nil {
+		return fmt.Errorf("decode refreshing price data: %w", err)
+	}
+	return nil
 }
 
 func normalizeSymbol(symbol string) string {

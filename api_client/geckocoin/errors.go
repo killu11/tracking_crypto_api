@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var ErrCoinNotFound = errors.New("coin_id_not_found")
+var ErrCoinNotFound = errors.New("coin_not_found")
 
 type APIError struct {
 	Status  string

@@ -1,15 +1,24 @@
 package entities
 
 import (
+	"errors"
 	"time"
 )
 
-type UnixTime time.Time
+var ErrInvalidAmount = errors.New("amount less zero")
 
 type Coin struct {
-	Id           string    `json:"id"`
+	ID           string    `json:"-"`
 	Symbol       string    `json:"symbol"`
 	Name         string    `json:"name"`
 	Usd          float64   `json:"usd"`
 	LastUpdateAt time.Time `json:"last_updated_at"`
+}
+
+func (c *Coin) UpdatePrice(amount float64) error {
+	if amount < 0 {
+		return ErrInvalidAmount
+	}
+	c.Usd = amount
+	return nil
 }

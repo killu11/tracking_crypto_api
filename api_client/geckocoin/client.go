@@ -3,7 +3,6 @@ package geckocoin
 import (
 	"context"
 	"crypto_api/config"
-	"crypto_api/storage"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,17 +21,15 @@ https://docs.coingecko.com/v3.0.1/reference/coins-list
 type GeckoClient struct {
 	http.Client
 	config *config.GeckoApiConfig
-	cache  *storage.RedisCache
 }
 
-func NewGeckoClient(config *config.GeckoApiConfig, cacheRepo *storage.RedisCache) *GeckoClient {
+func NewGeckoClient(config *config.GeckoApiConfig) *GeckoClient {
 	c := http.Client{
 		Timeout: 2 * time.Second,
 	}
 	return &GeckoClient{
 		Client: c,
 		config: config,
-		cache:  cacheRepo,
 	}
 }
 

@@ -24,7 +24,7 @@ type RedisConfig struct {
 }
 
 func NewRedisConfig() (*RedisConfig, error) {
-	f, err := os.Open("../cmd/redis_cfg.yml")
+	f, err := os.Open(configPath + "redis_cfg.yml") // Путь для тестов geckocoin клиента
 	if err != nil {
 		return nil, fmt.Errorf("create redis config: %w", err)
 	}
@@ -33,7 +33,7 @@ func NewRedisConfig() (*RedisConfig, error) {
 	if err = yaml.NewDecoder(f).Decode(&rc); err != nil {
 		return nil, err
 	}
-	
+
 	rc.Timeout *= time.Second
 	rc.DialTimeout *= time.Second
 	return rc, nil

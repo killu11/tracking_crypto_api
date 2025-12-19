@@ -6,6 +6,8 @@ import (
 	"github.com/lpernett/godotenv"
 )
 
+const configPath = "../../cmd/"
+
 type Config struct {
 	Gecko    *GeckoApiConfig
 	Postgres *PostgresConfig
@@ -13,7 +15,8 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
-	if err := godotenv.Load("../cmd/.env"); err != nil {
+	// Путь для тестирования API клиента
+	if err := godotenv.Load(configPath + ".env"); err != nil {
 		return nil, fmt.Errorf("failed create config: %w", err)
 	}
 

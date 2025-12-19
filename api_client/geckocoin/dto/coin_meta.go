@@ -15,12 +15,12 @@ type CoinMeta struct {
 	LastUpdate time.Time `json:"last_updated"`
 }
 
-func (m CoinMeta) ToEntity(value string) entities.Coin {
-	return entities.Coin{
-		Id:           m.ID,
+func (m CoinMeta) ToEntity() *entities.Coin {
+	return &entities.Coin{
+		ID:           m.ID,
 		Symbol:       m.Symbol,
 		Name:         m.Name,
-		Usd:          m.MarketData.ValutePrices[value],
+		Usd:          m.MarketData.ValutePrices["usd"],
 		LastUpdateAt: m.LastUpdate,
 	}
 }
