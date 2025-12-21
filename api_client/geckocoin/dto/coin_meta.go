@@ -2,6 +2,7 @@ package dto
 
 import (
 	"crypto_api/domain/entities"
+	"crypto_api/pkg"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type CoinMeta struct {
 func (m CoinMeta) ToEntity() *entities.Coin {
 	return &entities.Coin{
 		ID:           m.ID,
-		Symbol:       m.Symbol,
+		Symbol:       pkg.NormalizeSymbol(m.Symbol),
 		Name:         m.Name,
 		Usd:          m.MarketData.ValutePrices["usd"],
 		LastUpdateAt: m.LastUpdate,
