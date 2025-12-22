@@ -36,7 +36,7 @@ func (t *TrackingRepository) Add(
 	count, err := res.RowsAffected()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed add coin for tracking: %w", err)
 	}
 	if count == 0 {
 		return repositories.ErrCoinAlreadyTracking
@@ -62,9 +62,47 @@ func (t *TrackingRepository) FindBySymbol(
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, repositories.ErrCoinNotTracking
 		}
-		return nil, err
+		return nil, fmt.Errorf("couldn't find coin by symbol: %w", err)
 	}
 	return &coin, nil
+}
+
+func (t *TrackingRepository) GetAll(ctx context.Context, userID int) ([]*entities.Coin, error) {
+	rows, err := t.db.QueryContext(
+		ctx,
+		`SELECT symbol, name, current_price, last_updated
+			   FROM coins as c 
+			   JOIN users_tracking_coins as utc ON c.symbol = utc.coin_symbol
+			   WHERE utc.user_id = $1 ORDER BY utc.timestamp DESC `,
+		userID,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed get trackable coins list: %w", err)
+	}
+
+	defer rows.Close()
+	coinsList := make([]*entities.Coin, 0)
+	for rows.Next() {
+		var c entities.Coin
+		if err = rows.Scan(
+			&c.Symbol,
+			&c.Name,
+			&c.Usd,
+			&c.LastUpdateAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed scanning the row from coin's list: %w", err)
+		}
+
+		coinsList = append(coinsList, &c)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed itteration by rows from coin's list: %w", err)
+	}
+	if len(coinsList) == 0 {
+		return nil, repositories.ErrZeroTrackableCoins
+	}
+	return coinsList, nil
 }
 
 func (t *TrackingRepository) GetStatsBySymbol(
@@ -147,6 +185,34 @@ func (t *TrackingRepository) GetPriceHistory(
 	//	return nil, repositories.ErrCoinNotTracking
 	//}
 	return history, nil
+}
+
+func (t *TrackingRepository) UpdatePrice(
+	ctx context.Context,
+	coin *entities.Coin,
+	userID int,
+) error {
+	err := t.db.QueryRowContext(
+		ctx,
+		`with updated_coin as (
+    	UPDATE coins
+        SET current_price = $1,last_updated = $2
+        WHERE EXISTS(SELECT 1
+                     FROM users_tracking_coins
+                     WHERE user_id = $3
+                       AND coin_symbol = $4) RETURNING symbol, name, current_price, last_updated)
+		SELECT *
+		FROM updated_coin`,
+		coin.Usd, coin.LastUpdateAt, userID, coin.Symbol,
+	).Scan(&coin.Symbol, &coin.Name, &coin.Usd, &coin.LastUpdateAt)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return repositories.ErrCoinNotTracking
+		}
+		return fmt.Errorf("failed update coin price: %w", err)
+	}
+	return nil
 }
 
 func (t *TrackingRepository) Exists(

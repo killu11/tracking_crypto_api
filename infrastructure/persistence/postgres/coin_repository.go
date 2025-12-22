@@ -55,9 +55,9 @@ func (c *CoinRepository) UpdatePrice(ctx context.Context, coin *entities.Coin) e
 	panic("implement me")
 }
 
-func (c *CoinRepository) Delete(ctx context.Context, symbol string) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+func (c *CoinRepository) Delete(ctx context.Context, symbol string) error {
+	_, err := c.db.ExecContext(ctx, `DELETE FROM coins WHERE symbol=$1`, symbol)
+	return fmt.Errorf("failed delete coin: %w", err)
 }
 
 func NewCoinRepository(db *sql.DB) *CoinRepository {

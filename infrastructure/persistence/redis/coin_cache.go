@@ -41,6 +41,10 @@ func (r *CoinCache) GetCryptoID(ctx context.Context, symbol string) (string, boo
 	return coinID, true
 }
 
+func (r *CoinCache) DropCryptoID(ctx context.Context, symbol string) {
+	r.logger.Warnf("drop crypto id: %v", r.client.Del(ctx, symbol).Err())
+}
+
 func (r *CoinCache) SetNotFoundStatus(ctx context.Context, symbol string) {
 	if err := r.client.Set(
 		ctx,

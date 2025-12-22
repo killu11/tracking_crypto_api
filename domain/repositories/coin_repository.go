@@ -15,5 +15,5 @@ type CoinRepository interface {
 	FindBySymbol(ctx context.Context, symbol string) (*entities.Coin, error)
 	GetAll(ctx context.Context) ([]*entities.Coin, error)
 	UpdatePrice(ctx context.Context, coin *entities.Coin) error
-	Delete(ctx context.Context, symbol string) (bool, error)
+	Delete(ctx context.Context, symbol string) error
 }

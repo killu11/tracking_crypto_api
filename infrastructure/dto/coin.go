@@ -1,9 +1,21 @@
 package dto
 
-import "crypto_api/domain/entities"
+import (
+	"crypto_api/domain/entities"
+)
 
-type GetTrackableCoinResponse entities.Coin
-type GetTrackableCoinsResponse struct {
+type TrackableCoinResponse entities.Coin
+
+func NewTrackableCoinResponse(coin *entities.Coin) *TrackableCoinResponse {
+	return &TrackableCoinResponse{
+		Symbol:       coin.Symbol,
+		Name:         coin.Name,
+		Usd:          coin.Usd,
+		LastUpdateAt: coin.LastUpdateAt,
+	}
+}
+
+type TrackableListResponse struct {
 	Cryptos []*entities.Coin `json:"cryptos"`
 }
 type HistoryResponse struct {

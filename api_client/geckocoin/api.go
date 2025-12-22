@@ -30,14 +30,6 @@ func (gc *GeckoClient) Ping() error {
 
 func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, error) {
 	symbol = pkg.NormalizeSymbol(symbol)
-	//coinID, found, err := gc.cache.GetCryptoID(ctx, symbol)
-	//if err != nil {
-	//	return "", err
-	//}
-	//
-	//if found {
-	//	return coinID, nil
-	//}
 
 	coinID, err := gc.searchCoinID(ctx, symbol)
 	if err != nil {
@@ -48,14 +40,9 @@ func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, er
 		return "", ErrCoinNotFound
 	}
 
-	//if err = gc.cache.SetCryptoID(ctx, symbol, coinID); err != nil {
-	//	return coinID, err
-	//}
-
 	return coinID, nil
 }
 
-// Все для api POST запроса на отслежние
 func (gc *GeckoClient) GetCoinByID(ctx context.Context, coinID string) (*entities.Coin, error) {
 	response, err := gc.FetchEndpoint(ctx, fmt.Sprintf("coins/%s", coinID), nil)
 	if err != nil {
@@ -141,7 +128,7 @@ func (gc *GeckoClient) RefreshCoinPrice(ctx context.Context, coin *entities.Coin
 
 	dec := json.NewDecoder(response.Body)
 	if !dec.More() {
-		return fmt.Errorf("not found coin by ID")
+		return ErrCoinNotFound
 	}
 	for {
 		token, err := dec.Token()
@@ -153,7 +140,7 @@ func (gc *GeckoClient) RefreshCoinPrice(ctx context.Context, coin *entities.Coin
 		}
 	}
 	if err = dec.Decode(&coin); err != nil {
-		return fmt.Errorf("decode refreshing price data: %w", err)
+		return fmt.Errorf("decode fresh price data: %w", err)
 	}
 	return nil
 }

@@ -95,3 +95,15 @@ func TestCoinService_GetCoinStats(t *testing.T) {
 		got.PercentChange,
 	)
 }
+
+func TestCoinService_RefreshTrackableCoin(t *testing.T) {
+	coin, err := coinService.RefreshTrackableCoin(context.Background(), 1, "BTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(coin.Usd, coin.LastUpdateAt)
+
+	_, err = coinService.RefreshTrackableCoin(context.Background(), 1, "dsafqewgegxds")
+	t.Log(err)
+}
