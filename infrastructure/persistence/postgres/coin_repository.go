@@ -50,6 +50,10 @@ func (c *CoinRepository) GetAll(ctx context.Context) ([]*entities.Coin, error) {
 	panic("implement me")
 }
 
+//func (c *CoinRepository) UpdateActiveStatus(ctx context.Contexts) error {
+//
+//}
+
 func (c *CoinRepository) UpdatePrice(ctx context.Context, coin *entities.Coin) error {
 	//TODO implement me
 	panic("implement me")

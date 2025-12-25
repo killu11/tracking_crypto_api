@@ -110,37 +110,37 @@ func (gc *GeckoClient) searchCoinID(ctx context.Context, symbol string) (string,
 	return coinMeta.ID, nil
 }
 
-func (gc *GeckoClient) RefreshCoinPrice(ctx context.Context, coin *entities.Coin) error {
+func (gc *GeckoClient) GetFreshCoinData(ctx context.Context, coinID string) (*dto.FreshPriceData, error) {
 	params := url.Values{}
 	params.Set("vs_currencies", "usd")
-	params.Set("ids", coin.ID)
+	params.Set("ids", coinID)
+	params.Set("include_last_updated_at", "true")
 
 	response, err := gc.FetchEndpoint(ctx, "simple/price", params)
 	if err != nil {
-		return fmt.Errorf("refresh coin price: %w", err)
+		return nil, err
 	}
-	defer response.Body.Close()
 
+	defer response.Body.Close()
 	if response.StatusCode >= http.StatusBadRequest {
 		message, _ := io.ReadAll(io.LimitReader(response.Body, 512))
-		return NewAPIError(response.Status, response.StatusCode, string(message))
+		return nil, NewAPIError(response.Status, response.StatusCode, string(message))
 	}
 
 	dec := json.NewDecoder(response.Body)
-	if !dec.More() {
-		return ErrCoinNotFound
-	}
+
 	for {
-		token, err := dec.Token()
+		t, err := dec.Token()
 		if err != nil {
-			return fmt.Errorf("failed read token from body: %w", err)
+			return nil, fmt.Errorf("failed get token from fresh price data: %w", err)
 		}
-		if key, ok := token.(string); ok && key == coin.ID {
+		if key, ok := t.(string); ok && key == coinID {
 			break
 		}
 	}
-	if err = dec.Decode(&coin); err != nil {
-		return fmt.Errorf("decode fresh price data: %w", err)
+	var fpd dto.FreshPriceData
+	if err = dec.Decode(&fpd); err != nil {
+		return nil, fmt.Errorf("failed decode fresh price data: %w", err)
 	}
-	return nil
+	return &fpd, nil
 }

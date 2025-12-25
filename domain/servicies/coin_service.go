@@ -9,7 +9,6 @@ import (
 	cache "crypto_api/infrastructure/persistence/redis"
 	"crypto_api/pkg"
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -26,6 +25,7 @@ var (
 	ErrNotTracking         = errors.New("coin doesn't tracking")
 	ErrZeroTrackableCoins  = errors.New("zero trackable coins")
 	ErrHasCeasedToExist    = errors.New("coin has ceased to exist")
+	ErrCoinData            = errors.New("invalid coin data")
 )
 
 func NewCoinService(
@@ -85,7 +85,10 @@ func (s *CoinService) GetTrackableCoin(
 
 // GetTrackableCoinsList
 // Возвращает список отслеживаемых монет
-func (s *CoinService) GetTrackableCoinsList(ctx context.Context, userID int) (*dto.TrackableListResponse, error) {
+func (s *CoinService) GetTrackableCoinsList(
+	ctx context.Context,
+	userID int,
+) (*dto.TrackableListResponse, error) {
 	list, err := s.trackingRepo.GetAll(ctx, userID)
 	if err == nil {
 		return &dto.TrackableListResponse{Cryptos: list}, nil
@@ -144,48 +147,34 @@ func (s *CoinService) GetPriceHistory(
 	return nil, err
 }
 
-func (s *CoinService) RefreshTrackableCoin(
-	ctx context.Context,
-	userID int,
-	symbol string,
-) (*dto.TrackableCoinResponse, error) {
-	coinID, found := s.cache.GetCryptoID(ctx, symbol)
-	if found {
-		coin, err := s.geckoCoin.GetCoinByID(ctx, coinID)
-		if err != nil {
-			return nil, err
-		}
-		return dto.NewTrackableCoinResponse(coin), nil
-	}
-
-	coinID, err := s.geckoCoin.GetCoinID(ctx, symbol)
-	if err != nil {
-		if errors.Is(err, repos.ErrCoinNotFound) {
-			s.cache.SetNotFoundStatus(ctx, symbol)
-			return nil, ErrCoinNotFound
-		}
-		return nil, err
-	}
-
-	coin, err := s.geckoCoin.GetCoinByID(ctx, coinID)
-	if err != nil {
-		if errors.Is(err, repos.ErrCoinNotFound) {
-			s.cache.DropCryptoID(ctx, symbol)
-			s.cache.SetNotFoundStatus(ctx, symbol)
-			return nil, ErrCoinNotFound
-		}
-		return nil, err
-	}
-
-	if err = s.trackingRepo.UpdatePrice(ctx, coin, userID); err != nil {
-		if errors.Is(err, repos.ErrCoinNotTracking) {
-			return nil, fmt.Errorf("not rights to refresh coin price: %w", ErrNotTracking)
-		}
-		return nil, err
-
-	}
-	return dto.NewTrackableCoinResponse(coin), nil
-}
+//func (s *CoinService) RefreshTrackableCoin(
+//	ctx context.Context,
+//	userID int,
+//	symbol string,
+//) (*dto.TrackableCoinResponse, error) {
+//	if s.cache.IsNotFound(ctx, symbol) {
+//		return nil, ErrCoinNotFound
+//	}
+//
+//	id, found := s.cache.GetCryptoID(ctx, symbol)
+//	if found {
+//		coin := entities.NewCoin(id, symbol)
+//		if err := s.updateCoinPrice(ctx, coin, userID); err != nil {
+//			return nil, err
+//		}
+//		return dto.NewTrackableCoinResponse(coin), nil
+//	}
+//
+//	id, err := s.geckoCoin.GetCoinID(ctx, symbol)
+//	if err == nil {
+//		coin := entities.NewCoin(id, symbol)
+//		if err = s.updateCoinPrice(ctx, coin, userID); err != nil {
+//			return nil, err
+//		}
+//		return dto.NewTrackableCoinResponse(coin), nil
+//	}
+//
+//}
 
 // StopTrackCoin
 // Останавливает отслеживание
@@ -257,26 +246,21 @@ func (s *CoinService) getOrCreateCoin(
 	return coin, nil
 }
 
-//func (s *CoinService) getCoinIDWithRetries(ctx context.Context, symbol string) (string, error) {
-//	var lastErr error
-//	const MaxAttempts = 3
-//	for attempt := 1; attempt <= MaxAttempts; attempt++ {
-//		coin, err := s.geckoCoin.GetCoinID(ctx, symbol)
-//
-//		if err == nil {
-//			return coin, nil
-//		}
-//		lastErr = err
-//		if errors.Is(err, ErrCoinNotFound) {
-//			break
-//		}
-//
-//		select {
-//		case <-ctx.Done():
-//			return "", ctx.Err()
-//		case <-time.After(time.Duration(attempt*100) * time.Millisecond):
-//			continue
-//		}
+//func (s *CoinService) updateCoinPrice(ctx context.Context, coin *entities.Coin, userID int) error {
+//	pd, err := s.geckoCoin.GetFreshCoinData(ctx, coin.ID)
+//	if err != nil {
+//		return err
 //	}
-//	return "", lastErr
+//
+//	if err = coin.UpdatePrice(pd.Price, pd.LastUpdated); err != nil {
+//		return ErrCoinData
+//	}
+//
+//	if err = s.trackingRepo.UpdatePrice(ctx, coin, userID); err != nil {
+//		if errors.Is(err, repos.ErrCoinNotTracking) {
+//			return ErrNotTracking
+//		}
+//		return err
+//	}
+//	return nil
 //}

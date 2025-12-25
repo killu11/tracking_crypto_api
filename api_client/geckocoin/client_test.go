@@ -3,12 +3,13 @@ package geckocoin_test
 import (
 	"context"
 	"crypto_api/api_client/geckocoin"
-	"crypto_api/domain/entities"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestGeckoClient_GetCoinID(t *testing.T) {
@@ -53,11 +54,9 @@ func TestGeckoClient_GetCoinByID(t *testing.T) {
 
 func TestGeckoClient_RefreshCoinPrice(t *testing.T) {
 	coins := []string{"btc", "eth", "doge", "tramp", "luna", "froge"}
-	c := &entities.Coin{}
 	for _, symbol := range coins {
-		c.Symbol = symbol
-		t.Run(fmt.Sprintf("update_price_%s", c.Symbol), func(t *testing.T) {
-			id, err := gecko.GetCoinID(context.Background(), c.Symbol)
+		t.Run(fmt.Sprintf("update_price_%s", symbol), func(t *testing.T) {
+			id, err := gecko.GetCoinID(context.Background(), symbol)
 			if err != nil {
 				if errors.Is(err, geckocoin.ErrCoinNotFound) {
 					t.Errorf("invalid symbol: %v", err)
@@ -66,13 +65,15 @@ func TestGeckoClient_RefreshCoinPrice(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			c.ID = id
-			oldPrice := c.Usd
-			if err = gecko.RefreshCoinPrice(context.Background(), c); err != nil {
-				t.Error(err)
+
+			freshPrice, err := gecko.GetFreshCoinData(context.Background(), id)
+			t.Log(time.Time(freshPrice.LastUpdated))
+			if err != nil {
+				t.Fatal(err)
 				return
 			}
-			t.Logf("old: %f, new: %f", oldPrice, c.Usd)
+			b, _ := json.Marshal(freshPrice)
+			t.Logf("%s", b)
 		})
 	}
 }
