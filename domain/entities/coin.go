@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"crypto_api/api_client/geckocoin/dto"
 	"errors"
 	"time"
 )
@@ -17,18 +16,6 @@ type Coin struct {
 	Name         string    `json:"name"`
 	Usd          float64   `json:"current_price"`
 	LastUpdateAt time.Time `json:"last_updated"`
-}
-
-func (c *Coin) UpdatePrice(amount float64, t dto.UnixTime) error {
-	if amount < 0 {
-		return ErrInvalidAmount
-	}
-	c.Usd = amount
-	if tt := time.Time(t); !tt.IsZero() {
-		c.LastUpdateAt = tt
-		return nil
-	}
-	return ErrInvalidUpdateTime
 }
 
 func NewCoin(id, symbol string) *Coin {

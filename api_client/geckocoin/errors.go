@@ -6,6 +6,7 @@ import (
 )
 
 var ErrCoinNotFound = errors.New("coin_not_found")
+var ErrCoinsIdNotFound = errors.New("coins_id_not_found")
 
 type APIError struct {
 	Status  string

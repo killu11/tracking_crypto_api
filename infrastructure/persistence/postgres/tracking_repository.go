@@ -197,14 +197,18 @@ func (t *TrackingRepository) UpdatePrice(
 		`with updated_coin as (
     	UPDATE coins
         SET current_price = $1,last_updated = $2
-        WHERE EXISTS(SELECT 1
-                     FROM users_tracking_coins
-                     WHERE user_id = $3
-                       AND coin_symbol = $4) RETURNING symbol, name, current_price, last_updated)
+        WHERE symbol = $4 AND EXISTS(
+        	SELECT 1
+				 FROM users_tracking_coins
+				 WHERE user_id = $3
+				 AND coin_symbol = $4
+				 )
+    	    RETURNING name)
+
 		SELECT *
 		FROM updated_coin`,
 		coin.Usd, coin.LastUpdateAt, userID, coin.Symbol,
-	).Scan(&coin.Symbol, &coin.Name, &coin.Usd, &coin.LastUpdateAt)
+	).Scan(&coin.Name)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

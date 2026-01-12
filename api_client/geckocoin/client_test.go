@@ -14,7 +14,7 @@ import (
 
 func TestGeckoClient_GetCoinID(t *testing.T) {
 	symbol := "eth"
-	id, err := gecko.GetCoinID(context.Background(), symbol)
+	id, err := gecko.SymbolToID(context.Background(), symbol)
 	if err != nil {
 		t.Error(err)
 		return
@@ -31,7 +31,7 @@ func TestGeckoClient_GetCoinByID(t *testing.T) {
 	ctx := context.Background()
 	for _, symbol := range coinsSymbols {
 		t.Run(fmt.Sprintf("test_%s", symbol), func(t *testing.T) {
-			coinID, err := gecko.GetCoinID(ctx, symbol)
+			coinID, err := gecko.SymbolToID(ctx, symbol)
 			if err != nil {
 				t.Error(err)
 				return
@@ -56,7 +56,7 @@ func TestGeckoClient_RefreshCoinPrice(t *testing.T) {
 	coins := []string{"btc", "eth", "doge", "tramp", "luna", "froge"}
 	for _, symbol := range coins {
 		t.Run(fmt.Sprintf("update_price_%s", symbol), func(t *testing.T) {
-			id, err := gecko.GetCoinID(context.Background(), symbol)
+			id, err := gecko.SymbolToID(context.Background(), symbol)
 			if err != nil {
 				if errors.Is(err, geckocoin.ErrCoinNotFound) {
 					t.Errorf("invalid symbol: %v", err)

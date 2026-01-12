@@ -45,12 +45,12 @@ func (r *CoinCache) DropCryptoID(ctx context.Context, symbol string) {
 	r.logger.Warnf("drop crypto id: %v", r.client.Del(ctx, symbol).Err())
 }
 
-func (r *CoinCache) SetNotFoundStatus(ctx context.Context, symbol string) {
+func (r *CoinCache) SetNotFoundStatus(ctx context.Context, symbol string, ttl time.Duration) {
 	if err := r.client.Set(
 		ctx,
 		fmt.Sprintf("coin:not_found:%s", symbol),
 		"",
-		10*time.Minute,
+		ttl,
 	).Err(); err != nil {
 		r.logger.Warnf("redis caching 'not found' status: %v", err)
 	}

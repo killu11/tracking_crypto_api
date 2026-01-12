@@ -28,7 +28,7 @@ func (gc *GeckoClient) Ping() error {
 	return nil
 }
 
-func (gc *GeckoClient) GetCoinID(ctx context.Context, symbol string) (string, error) {
+func (gc *GeckoClient) SymbolToID(ctx context.Context, symbol string) (string, error) {
 	symbol = pkg.NormalizeSymbol(symbol)
 
 	coinID, err := gc.searchCoinID(ctx, symbol)
