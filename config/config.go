@@ -6,7 +6,7 @@ import (
 	"github.com/lpernett/godotenv"
 )
 
-const configPath = "../../cmd/"
+const configPath = ""
 
 type Config struct {
 	Gecko    *GeckoApiConfig

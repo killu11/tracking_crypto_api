@@ -1,4 +1,4 @@
-package dto
+package response
 
 import (
 	"crypto_api/domain/entities"
@@ -27,4 +27,12 @@ type StatisticResponse struct {
 	Symbol                   string  `json:"symbol"`
 	Price                    float64 `json:"current_price"`
 	*entities.PriceStatistic `json:"stats"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+func NewError(msg string) ErrorResponse {
+	return ErrorResponse{Error: msg}
 }
