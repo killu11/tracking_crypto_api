@@ -59,9 +59,9 @@ func (c *CoinRepository) UpdatePrice(ctx context.Context, coin *entities.Coin) e
 	panic("implement me")
 }
 
-func (c *CoinRepository) Delete(ctx context.Context, symbol string) error {
-	_, err := c.db.ExecContext(ctx, `DELETE FROM coins WHERE symbol=$1`, symbol)
-	return fmt.Errorf("failed delete coin: %w", err)
+func (c *CoinRepository) DeleteUnactiveCoins(ctx context.Context) error {
+	_, err := c.db.ExecContext(ctx, `DELETE FROM coins WHERE active IS FALSE`)
+	return fmt.Errorf("failed delete unactive coins: %w", err)
 }
 
 func NewCoinRepository(db *sql.DB) *CoinRepository {

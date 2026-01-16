@@ -16,6 +16,8 @@ func JSONResponse(w http.ResponseWriter, v any, code int) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	buf.WriteTo(w)
 }
@@ -23,13 +25,5 @@ func JSONResponse(w http.ResponseWriter, v any, code int) {
 // JSONError - обрабатывает полученное сообщение об ошибке и кодирует его JSON-ом в responseWriter
 func JSONError(w http.ResponseWriter, msg string, code int) {
 	errResponse := response.NewError(msg)
-	var buf bytes.Buffer
-
-	if err := json.NewEncoder(&buf).Encode(&errResponse); err != nil {
-		log.Printf("|WARNING| failed encode json: %v\n", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(code)
-	buf.WriteTo(w)
+	JSONResponse(w, &errResponse, code)
 }
