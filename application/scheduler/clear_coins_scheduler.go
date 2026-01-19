@@ -38,7 +38,7 @@ func (cs *CleaningScheduler) run(ctx context.Context, configChan <-chan time.Dur
 				if dur != cs.duration {
 					cs.SetDuration(dur)
 					ticker.Reset(dur)
-					log.Printf("Scheduler interval updated to %v", dur)
+					log.Printf("Cleaning scheduler interval updated to %v", dur)
 				}
 			case <-ticker.C:
 				if err := cs.cleanUnactiveCoins(ctx); err != nil {

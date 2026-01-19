@@ -25,8 +25,6 @@ var (
 	ErrCoinAlreadyTracking = errors.New("coin already tracking")
 	ErrCoinNotTracking     = errors.New("coin doesn't tracking")
 	ErrZeroTrackableCoins  = errors.New("zero trackable coins")
-	ErrHasCeasedToExist    = errors.New("coin has ceased to exist")
-	ErrCoinData            = errors.New("invalid coin data")
 )
 
 func NewCoinService(

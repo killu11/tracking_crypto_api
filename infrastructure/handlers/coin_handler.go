@@ -22,6 +22,7 @@ func NewCoinHandler(s *services.CoinService) *CoinHandler {
 
 func (h *CoinHandler) InitHandlers(mux *chi.Mux) {
 	mux.Post("/crypto", h.StartTracking)
+	mux.Get("/crypto", h.TrackableList)
 }
 
 // StartTracking
@@ -56,10 +57,14 @@ func (h *CoinHandler) TrackableList(w http.ResponseWriter, r *http.Request) {
 
 func (h *CoinHandler) matchError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(services.ErrCoinNotFound, err):
+	case errors.Is(err, services.ErrCoinNotFound):
 		pkg.JSONError(w, "coin not found", http.StatusNotFound)
-	case errors.Is(services.ErrCoinAlreadyTracking, err):
+	case errors.Is(err, services.ErrCoinAlreadyTracking):
 		pkg.JSONError(w, err.Error(), http.StatusConflict)
+	case errors.Is(err, services.ErrZeroTrackableCoins):
+		pkg.JSONResponse(w, map[string]string{}, http.StatusOK)
+	case errors.Is(err, services.ErrCoinNotTracking):
+		pkg.JSONError(w, "coin doesn't tracking", http.StatusNotFound)
 	default:
 		log.Printf("|WARNING|: %v", err)
 		pkg.JSONError(w, "internal server error", http.StatusInternalServerError)
